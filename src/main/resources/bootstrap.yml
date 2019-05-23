@@ -1,6 +1,6 @@
 spring:
   application:
-    name: '@project.artifactId@'
+    name: @project.artifactId@
   cloud:
     config:
       fail-fast: ${SPRING_CLOUD_CONFIG_FAIL-FAST:true}
@@ -10,8 +10,32 @@ spring:
         max-attempts: ${SPRING_CLOUD_CONFIG_RETRY_MAX-ATTEMPTS:10}
         max-interval: ${SPRING_CLOUD_CONFIG_RETRY_MAX-INTERVAL:10000}
         initial-interval: ${SPRING_CLOUD_CONFIG_RETRY_INITIAL-INTERVAL:1000}
+    stream:
+      bindings:
+        order_create_input: #消费者绑定的消息通道
+          destination: order.create.exchange  #消费者绑定的交换器
+          group: order.create.group                  #和此交换器绑定的队列，消息持久化必须有队列才行
+        order_create_output: #生产者绑定的消息通道
+          destination: order.create.exchange  #生产者绑定的交换器
+          content-type: application/json  # 设置消息类型，如果是json则设置“application/json”
+      rabbit:
+        bindings:
+          order_create_input: #消费者消息通道
+            consumer:  #消费者 固定这么写
+              bindingRoutingKey: order.create.key  #路由key
+              acknowledge-mode: manual     # auto manual 消息ack确定模式
+              autoBindDlq: true
+              republishToDlq: true
+          order_create_output: #生产者消息通道
+            producer:    #生产者，固定这样写
+              routing-key-expression: '''order.create.key'''  #定义 RoutingKey 的表达式配置
   main:
     allow-bean-definition-overriding: true
 eureka:
   instance:
     instanceId: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}
+
+wsmhz:
+  business:
+    pay:
+      notifyUrl: ${notifyUrl:http://wsmhz.n.yumc.pw/api/order/aliPayCallback}
