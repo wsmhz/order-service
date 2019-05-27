@@ -1,7 +1,5 @@
 package com.wsmhz.shop.order.service.task;
 
-import com.wsmhz.common.business.properties.BusinessProperties;
-import com.wsmhz.pay.pay.service.api.api.PayServiceApi;
 import com.wsmhz.shop.order.service.enums.OrderConst;
 import com.wsmhz.shop.order.service.properties.TaskProperties;
 import com.wsmhz.shop.order.service.service.OrderService;

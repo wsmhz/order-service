@@ -1,6 +1,9 @@
 package com.wsmhz.shop.order.service.controller;
 
 
+import com.alipay.api.AlipayApiException;
+import com.alipay.api.internal.util.AlipaySignature;
+import com.alipay.demo.trade.config.Configs;
 import com.google.common.collect.Maps;
 import com.wsmhz.common.business.response.ServerResponse;
 import com.wsmhz.shop.order.service.api.api.OrderApi;
@@ -91,6 +94,15 @@ public class FrontOrderController implements OrderApi {
 
         //验证回调的正确性,是不是支付宝发的.还要避免重复通知.
         params.remove("sign_type");
+        try {
+            boolean aliPayRSACheckedV2 = AlipaySignature.rsaCheckV2(params, Configs.getAlipayPublicKey(),"utf-8",Configs.getSignType());
+
+            if(!aliPayRSACheckedV2){
+                return ServerResponse.createByErrorMessage("非法请求,验证不通过");
+            }
+        } catch (AlipayApiException e) {
+            logger.error("支付宝验证回调异常",e);
+        }
         //验证各种数据
         ServerResponse serverResponse = orderService.aliPayCallback(params);
         if(serverResponse.isSuccess()){
