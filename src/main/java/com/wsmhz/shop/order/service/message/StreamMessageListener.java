@@ -25,7 +25,7 @@ public class StreamMessageListener {
     private OrderService orderService;
 
     @StreamListener(StreamChanelInput.ORDER_CREATE_INPUT)
-    public void onMessage(Message<OrderCreateMessageForm> message, @Header(AmqpHeaders.CHANNEL) Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) Long deliveryTag) throws Exception {
+    public void onMessage(Message<OrderCreateMessageForm> message) throws Exception {
        try {
            OrderCreateMessageForm messageForm = message.getPayload();
            log.info("接收到消息:{}", messageForm);
@@ -35,16 +35,10 @@ public class StreamMessageListener {
            if(userId != null && shippingId != null){
                log.info("开始创建订单");
                orderService.createOrder(userId,shippingId,messageKey);
-               //消费完毕
-               channel.basicAck(deliveryTag, false);
            }else {
-               log.error("参数异常，创建订单失败");
-               // 丢弃消息
-               channel.basicReject(deliveryTag, false);
+               throw new AmqpRejectAndDontRequeueException(message.getPayload() + "消息消费失败，放到对应的死信队列");
            }
         } catch (Exception e) {
-            log.error("消息监听出现异常: {}", e);
-            // 丢弃消息
            throw new AmqpRejectAndDontRequeueException(message.getPayload() + "消息消费失败，放到对应的死信队列", e);
         }
     }

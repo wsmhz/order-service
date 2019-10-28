@@ -20,10 +20,12 @@ import com.wsmhz.shop.order.service.domain.dto.ShippingDto;
 import com.wsmhz.shop.order.service.domain.entity.Order;
 import com.wsmhz.shop.order.service.domain.entity.OrderItem;
 import com.wsmhz.shop.order.service.domain.entity.Shipping;
+import com.wsmhz.shop.order.service.domain.entity.ShopOrder;
 import com.wsmhz.shop.order.service.domain.vo.OrderVo;
 import com.wsmhz.shop.order.service.enums.OrderConst;
 import com.wsmhz.shop.order.service.mapper.OrderItemMapper;
 import com.wsmhz.shop.order.service.mapper.OrderMapper;
+import com.wsmhz.shop.order.service.mapper.ShopOrderMapper;
 import com.wsmhz.shop.order.service.service.OrderService;
 import com.wsmhz.shop.order.service.service.ShippingService;
 import com.wsmhz.shop.product.service.api.api.CartApi;
@@ -35,10 +37,14 @@ import com.wsmhz.shop.product.service.api.domain.form.UserCartForm;
 import com.wsmhz.shop.product.service.api.domain.vo.CartSimpleVo;
 import com.wsmhz.shop.product.service.api.domain.vo.ProductSimpleVo;
 import com.wsmhz.shop.product.service.api.enums.ProductConst;
+import io.seata.rm.datasource.DataSourceProxy;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
+import org.apache.ibatis.session.Configuration;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -79,6 +85,12 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
     private String notifyUrl;
     @Autowired
     private AlipayTradeService tradeService;
+    @Autowired
+    private SqlSessionFactory sqlSessionFactory;
+    @Autowired
+    private DataSourceProxy dataSourceProxy;
+    @Autowired
+    private ShopOrderMapper shopOrderMapper;
 
     @Override
     public Order selectByUserIdAndOrderNo(Long userId, Long orderNo) {
@@ -102,9 +114,12 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
         return orderItemMapper.selectByExample(example);
     }
 
-    @Transactional
+    @GlobalTransactional(timeoutMills = 300000)
     @Override
     public ServerResponse createOrder(Long userId, Long shippingId, String messageKey) {
+        Configuration configuration = sqlSessionFactory.getConfiguration();
+//        dataSourceProxy..
+
         //从购物车中获取数据
         List<CartSimpleVo> cartList = cartApi.selectByUserId(UserCartForm.builder().userId(userId).checked(true).build());
         //计算这个订单的总价
@@ -547,12 +562,11 @@ public class OrderServiceImpl extends BaseServiceImpl<Order> implements OrderSer
 
         order.setUserId(userId);
         order.setShippingId(shippingId);
+        int i = shopOrderMapper.insertSelective(DozerBeanUtil.map(order, new ShopOrder()));
         int rowCount = orderMapper.insertSelective(order);
-        if(rowCount > 0){
-            redisTemplate.boundValueOps(messageKey).set(JsonUtil.objToString(order),OrderConst.redisMessage.CREATE_ORDER_MESSAGE_TIMEOUT_HOUR, TimeUnit.HOURS);
-            return order;
-        }
-        return null;
+        redisTemplate.boundValueOps(messageKey).set(JsonUtil.objToString(order),OrderConst.redisMessage.CREATE_ORDER_MESSAGE_TIMEOUT_HOUR, TimeUnit.HOURS);
+        return order;
+//        return null;
     }
 
     private long generateOrderNo(){

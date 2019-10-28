@@ -5,6 +5,7 @@ import com.alipay.api.AlipayApiException;
 import com.alipay.api.internal.util.AlipaySignature;
 import com.alipay.demo.trade.config.Configs;
 import com.google.common.collect.Maps;
+import com.wsmhz.common.business.annotation.UnAuth;
 import com.wsmhz.common.business.response.ServerResponse;
 import com.wsmhz.shop.order.service.api.api.OrderApi;
 import com.wsmhz.shop.order.service.domain.entity.Order;
@@ -53,6 +54,7 @@ public class FrontOrderController implements OrderApi {
         return  orderService.selectOrderDetail(null,id);
     }
 
+    @UnAuth
     @PostMapping
     public ServerResponse insert(@RequestBody Order order){
         StringBuilder createOrderMessageKey = new StringBuilder(OrderConst.redisMessage.CREATE_ORDER_MESSAGE_)
@@ -61,6 +63,7 @@ public class FrontOrderController implements OrderApi {
                 .userId(order.getUserId())
                 .shippingId(order.getShippingId())
                 .MessageKey(createOrderMessageKey.toString()).build()));
+//        orderService.createOrder(order.getUserId(),order.getShippingId(),createOrderMessageKey.toString());
         return ServerResponse.createBySuccess(createOrderMessageKey.toString());
     }
 
@@ -75,6 +78,7 @@ public class FrontOrderController implements OrderApi {
         return orderService.pay(order.getOrderNo(),order.getUserId(),path);
     }
 
+    @UnAuth
     @RequestMapping("/aliPayCallback")
     @ResponseBody
     public Object aliPayCallback(HttpServletRequest request){

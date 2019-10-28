@@ -17,6 +17,10 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
+    <properties>
+        <alibaba-cloud.version>2.1.0.RELEASE</alibaba-cloud.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.wsmhz.shop</groupId>
@@ -33,7 +37,25 @@
             <!--<artifactId>pay-service-api</artifactId>-->
             <!--<version>1.0-SNAPSHOT</version>-->
         <!--</dependency>-->
+
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
+        </dependency>
+
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${alibaba-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <resources>
